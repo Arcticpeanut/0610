@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether Art Hall | 예매 관리 시스템 (ADMIN)</title>
+    <meta name="description" content="Aether Art Hall의 예매 현황을 한눈에 조회하고 관리하는 비밀번호 없는 관리자 페이지입니다.">
+    <!-- Google Fonts: Outfit (브랜드 & 헤딩용), Inter (본문용) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+    <!-- 배경 글로우 데코레이션 효과 -->
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+
+    <!-- 네비게이션 바 -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" id="logo-admin">
+                <i data-lucide="sparkles" class="logo-icon"></i>
+                AETHER<span>ADMIN</span>
+            </a>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link" id="btn-booking-nav-back" style="text-decoration: none;">
+                    <i data-lucide="ticket"></i> 예매하기 페이지로
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="main-content">
+        <section class="section-container" id="admin-main-section">
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <span class="section-number">ADMIN</span>
+                    <h1 class="section-title" id="admin-page-title">예매 현황 관리</h1>
+                </div>
+                <p class="section-subtitle">Aether Art Hall의 모든 예매 내역을 한눈에 관리하고 취소할 수 있습니다.</p>
+            </div>
+
+            <!-- 대시보드 요약 정보 카드 -->
+            <div class="stats-grid" id="stats-dashboard">
+                <div class="stats-card" id="card-total-bookings">
+                    <div class="stats-icon-wrapper cyan">
+                        <i data-lucide="calendar"></i>
+                    </div>
+                    <div class="stats-info">
+                        <span class="stats-label">총 예매 건수</span>
+                        <h3 class="stats-value" id="stat-total-bookings">0</h3>
+                    </div>
+                </div>
+                <div class="stats-card" id="card-total-seats">
+                    <div class="stats-icon-wrapper purple">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <div class="stats-info">
+                        <span class="stats-label">총 예매 좌석</span>
+                        <h3 class="stats-value" id="stat-total-seats">0</h3>
+                    </div>
+                </div>
+                <div class="stats-card" id="card-popular-movie">
+                    <div class="stats-icon-wrapper gold">
+                        <i data-lucide="award"></i>
+                    </div>
+                    <div class="stats-info">
+                        <span class="stats-label">가장 인기있는 공연</span>
+                        <h3 class="stats-value" id="stat-popular-movie">-</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 필터 및 컨트롤 바 -->
+            <div class="control-bar" id="admin-control-bar">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="예매번호 또는 공연명 검색...">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-movie" class="admin-select" aria-label="공연 필터">
+                        <option value="">모든 공연</option>
+                    </select>
+                    <select id="sort-tickets" class="admin-select" aria-label="정렬 순서">
+                        <option value="newest">예매 일시 (최신순)</option>
+                        <option value="oldest">예매 일시 (과거순)</option>
+                        <option value="showDate">상영 일정순</option>
+                    </select>
+                    <button id="btn-refresh" class="btn-refresh">
+                        <i data-lucide="refresh-cw"></i> 새로고침
+                    </button>
+                </div>
+            </div>
+
+            <!-- 데이터 테이블 카드 -->
+            <div class="table-card" id="admin-table-card">
+                <div class="table-responsive">
+                    <table class="admin-table" id="tickets-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">예매번호</th>
+                                <th scope="col">공연명</th>
+                                <th scope="col">관람 일정</th>
+                                <th scope="col">선택 좌석</th>
+                                <th scope="col">예매 일시</th>
+                                <th scope="col">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticket-table-body">
+                            <!-- JavaScript에서 동적으로 행이 추가됩니다. -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 데이터가 없을 때 메시지 -->
+                <div id="no-data-message" class="no-data hidden">
+                    <i data-lucide="alert-circle"></i>
+                    <p>조회된 예매 내역이 없습니다.</p>
+                </div>
+                
+                <!-- 로딩 중 상태 -->
+                <div id="table-loading" class="table-loading">
+                    <i data-lucide="loader" class="animate-spin"></i>
+                    <p>예매 내역을 불러오는 중입니다...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p class="footer-copyright">&copy; 2026 Aether Art Hall. 예매 관리자 모드 (모든 사용자 공개)</p>
+            <p class="footer-info">HTML5 • CSS3 Grid & Flexbox • Vanilla JavaScript (Supabase Database)</p>
+        </div>
+    </footer>
+
+    <!-- Vite는 ESM 스크립트 모듈 방식을 사용합니다 -->
+    <script type="module" src="./admin.js"></script>
+</body>
+</html>
