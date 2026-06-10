@@ -146,18 +146,33 @@ function normalizeTickets(rawData) {
         const booked_at = ticket.booked_at || ticket.bookedAt || '';
         
         let seats = [];
+        let customer_name = '-';
+        let customer_phone = '-';
+        
+        let rawSeats = [];
         if (Array.isArray(ticket.seats)) {
-            seats = ticket.seats;
+            rawSeats = ticket.seats;
         } else if (typeof ticket.seats === 'string') {
             try {
-                seats = JSON.parse(ticket.seats);
+                rawSeats = JSON.parse(ticket.seats);
             } catch (e) {
                 // 콤마로 구분된 텍스트 형태일 때 대비
-                seats = ticket.seats.split(',').map(s => s.trim());
+                rawSeats = ticket.seats.split(',').map(s => s.trim());
             }
         }
 
-        return { id, movie_id, movie_title, show_date, show_time, seats, booked_at };
+        // seats 배열에서 예매자 정보 메타데이터 추출 및 일반 좌석 필터링
+        rawSeats.forEach(s => {
+            if (s.startsWith('NAME:')) {
+                customer_name = s.substring(5);
+            } else if (s.startsWith('PHONE:')) {
+                customer_phone = s.substring(6);
+            } else {
+                seats.push(s);
+            }
+        });
+
+        return { id, customer_name, customer_phone, movie_id, movie_title, show_date, show_time, seats, booked_at };
     });
 }
 
@@ -209,14 +224,16 @@ function applyFiltersAndRender() {
         result = result.filter(ticket => ticket.movie_id === state.selectedMovieFilter);
     }
 
-    // 10-2. 검색어 필터링 (예매번호, 공연제목, 좌석명)
+    // 10-2. 검색어 필터링 (예매번호, 공연제목, 좌석명, 예매자명, 연락처)
     if (state.searchQuery) {
         const query = state.searchQuery;
         result = result.filter(ticket => {
             const matchId = ticket.id.toLowerCase().includes(query);
             const matchTitle = ticket.movie_title.toLowerCase().includes(query);
             const matchSeats = ticket.seats.some(s => s.replace('-', '').toLowerCase().includes(query) || s.toLowerCase().includes(query));
-            return matchId || matchTitle || matchSeats;
+            const matchName = ticket.customer_name.toLowerCase().includes(query);
+            const matchPhone = ticket.customer_phone.toLowerCase().includes(query);
+            return matchId || matchTitle || matchSeats || matchName || matchPhone;
         });
     }
 
@@ -277,6 +294,8 @@ function renderTicketsTable() {
 
         row.innerHTML = `
             <td><span class="ticket-id">${ticket.id}</span></td>
+            <td><span class="customer-name-td">${ticket.customer_name}</span></td>
+            <td><span class="customer-phone-td">${ticket.customer_phone}</span></td>
             <td class="movie-title-td">${ticket.movie_title}</td>
             <td class="date-td">${dateStr}<br>${timeStr}</td>
             <td><div class="seats-container">${seatBadges}</div></td>

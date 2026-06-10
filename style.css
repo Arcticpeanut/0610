@@ -786,3 +786,52 @@ body {
     animation: spin 1s linear infinite;
     display: inline-block;
 }
+
+/* 13. 예매자 정보 입력 필드 스타일 */
+.customer-info-fields {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.customer-info-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-left: 3px solid var(--color-secondary);
+    padding-left: 10px;
+    margin-bottom: 4px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.form-input {
+    background: rgba(10, 12, 18, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 8px var(--color-secondary-glow);
+    background: rgba(10, 12, 18, 0.7);
+}

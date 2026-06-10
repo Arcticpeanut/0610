@@ -377,7 +377,9 @@ function getBookedSeatsForShow(movieId, date, time) {
             const seats = Array.isArray(ticket.seats) 
                 ? ticket.seats 
                 : (typeof ticket.seats === 'string' ? JSON.parse(ticket.seats) : []);
-            bookedSeats.push(...seats);
+            // Filter out NAME: and PHONE: metadata from blocking seats mapping
+            const realSeats = seats.filter(s => !s.startsWith('NAME:') && !s.startsWith('PHONE:'));
+            bookedSeats.push(...realSeats);
         }
     });
     
@@ -421,9 +423,42 @@ async function fetchBookedTickets(movieId, date) {
 async function handleCheckout() {
     if (state.selectedSeats.length === 0) return;
 
+    // 이름 및 전화번호 입력 필드 검증
+    const nameInput = document.getElementById('customer-name');
+    const phoneInput = document.getElementById('customer-phone');
+    
+    if (!nameInput || !phoneInput) return;
+
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+
+    if (!name) {
+        alert('예매자 이름을 입력해주세요.');
+        nameInput.focus();
+        return;
+    }
+    if (!phone) {
+        alert('예매자 전화번호를 입력해주세요.');
+        phoneInput.focus();
+        return;
+    }
+
+    // 전화번호 국문 표준 형식 검사 (숫자, 하이픈, 띄어쓰기 조합)
+    const phoneRegex = /^[0-9\s-]{9,20}$/;
+    if (!phoneRegex.test(phone)) {
+        alert('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
+        phoneInput.focus();
+        return;
+    }
+
     // 예매 번호 생성 (예: AC-XXXXXX)
     const ticketId = 'AC-' + Math.random().toString(36).substr(2, 9).toUpperCase();
     
+    // seats 배열 복제 후 예매자 이름 및 연락처 메타데이터 병합
+    const seatsWithMetadata = [...state.selectedSeats];
+    seatsWithMetadata.push(`NAME:${name}`);
+    seatsWithMetadata.push(`PHONE:${phone}`);
+
     // DB 테이블에 적합한 스네이크 케이스 필드 구조
     const newTicket = {
         id: ticketId,
@@ -431,7 +466,7 @@ async function handleCheckout() {
         movie_title: state.selectedPerformance.title,
         show_date: state.selectedDate,
         show_time: state.selectedTime,
-        seats: [...state.selectedSeats],
+        seats: seatsWithMetadata,
         booked_at: new Date().toISOString()
     };
 
@@ -467,7 +502,7 @@ async function handleCheckout() {
                 movieTitle: state.selectedPerformance.title,
                 date: state.selectedDate,
                 time: state.selectedTime,
-                seats: [...state.selectedSeats],
+                seats: seatsWithMetadata,
                 bookedAt: new Date().toLocaleString()
             };
             
@@ -488,6 +523,10 @@ async function handleCheckout() {
     if (success) {
         // 성공 메시지 피드백
         alert(`🎉 무료 예매가 성공적으로 완료되었습니다!\n예매번호: ${ticketId}\n선택하신 좌석: ${state.selectedSeats.map(s => s.replace('-', '')).join(', ')}`);
+
+        // 입력 폼 필드 리셋
+        if (nameInput) nameInput.value = '';
+        if (phoneInput) phoneInput.value = '';
 
         // 입력 상태 리셋 및 최신 예매 현황 동기화
         state.selectedSeats = [];
