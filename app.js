@@ -21,6 +21,12 @@ const isSupabaseConfigured =
     supabaseKey && 
     supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
 
+console.log('[Aether Art Hall] Supabase 설정 상태:', {
+    url: supabaseUrl,
+    keyConfigured: !!supabaseKey,
+    isSupabaseConfigured
+});
+
 const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey) : null;
 
 // 1. 애플리케이션 상태 (Global State)
