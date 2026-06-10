@@ -237,6 +237,15 @@
     letter-spacing: 0.5px;
 }
 
+.customer-name-td {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.customer-phone-td {
+    white-space: nowrap;
+}
+
 .movie-title-td {
     font-weight: 600;
 }
