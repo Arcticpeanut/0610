@@ -776,3 +776,13 @@ body {
         gap: 12px;
     }
 }
+
+/* 로딩 스피너 애니메이션 */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
