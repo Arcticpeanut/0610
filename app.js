@@ -12,8 +12,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase 클라이언트 초기화 및 설정 체크
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+let supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Vite 개발 서버 재시작이 안 되었거나 환경변수를 불러오지 못한 경우를 대비해
+// 실제 사용자의 Supabase 주소와 키를 폴백 기본값으로 할당합니다.
+if (!supabaseUrl || supabaseUrl === 'YOUR_SUPABASE_PROJECT_URL') {
+    supabaseUrl = 'https://ppopovwarjgsuynrgyzo.supabase.co';
+}
+if (!supabaseKey || supabaseKey === 'YOUR_SUPABASE_ANON_KEY') {
+    supabaseKey = 'sb_publishable_mnto_SfUgXs6V13rcaRXPQ_rHCeK0h6';
+}
 
 const isSupabaseConfigured = 
     supabaseUrl && 
