@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether Art Hall | 프리미엄 연극 예매 시스템</title>
+    <!-- Google Fonts: Outfit (브랜드 & 헤딩용), Inter (본문용) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- 배경 글로우 데코레이션 효과 -->
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+
+    <!-- 네비게이션 바 -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo" id="logo">
+                <i data-lucide="sparkles" class="logo-icon"></i>
+                AETHER<span>ART HALL</span>
+            </a>
+            <nav class="nav-menu">
+                <button class="nav-link active" id="btn-booking-nav">
+                    <i data-lucide="ticket"></i> 예매하기
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="main-content">
+        <!-- 1. 연극 선택 섹션 -->
+        <section class="section-container" id="movie-section">
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <span class="section-number">01</span>
+                    <h2 class="section-title">공연 선택</h2>
+                </div>
+                <p class="section-subtitle">현재 상영 중인 프리미엄 연극 라인업</p>
+            </div>
+            
+            <!-- 연극 리스트 컨테이너 -->
+            <div class="movie-grid" id="movie-grid">
+                <!-- JavaScript에서 동적으로 연극 카드가 채워집니다. -->
+            </div>
+        </section>
+
+        <!-- 2. 상영 일정 선택 섹션 -->
+        <section class="section-container hidden" id="schedule-section">
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <span class="section-number">02</span>
+                    <h2 class="section-title">공연 일정</h2>
+                </div>
+                <p class="section-subtitle">관람하실 날짜와 회차를 선택해주세요</p>
+            </div>
+
+            <!-- 날짜 선택 바 (가로 스크롤) -->
+            <div class="date-scroll-container">
+                <div class="date-scroll-track" id="date-track">
+                    <!-- JavaScript에서 렌더링 -->
+                </div>
+            </div>
+
+            <!-- 시간대 회차 선택 -->
+            <div class="time-grid-container">
+                <h3 class="subsection-title">상영 시간 선택</h3>
+                <div class="time-grid" id="time-grid">
+                    <!-- JavaScript에서 렌더링 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 좌석 선택 섹션 -->
+        <section class="section-container hidden" id="seat-section">
+            <div class="section-header">
+                <div class="section-title-wrapper">
+                    <span class="section-number">03</span>
+                    <h2 class="section-title">좌석 선택</h2>
+                </div>
+                <p class="section-subtitle">아트홀 무대를 기준으로 원하시는 좌석을 예약하세요</p>
+            </div>
+
+            <div class="booking-layout-wrapper">
+                <!-- 좌석 맵 보드 -->
+                <div class="seat-map-card">
+                    <!-- 3D 연극 무대 효과 -->
+                    <div class="cinema-screen-container">
+                        <div class="cinema-screen">STAGE</div>
+                        <div class="screen-glow"></div>
+                    </div>
+
+                    <!-- 좌석 레이아웃 -->
+                    <div class="seat-layout" id="seat-layout">
+                        <!-- JavaScript에서 동적 생성 -->
+                    </div>
+
+                    <!-- 좌석 범례(Legend) -->
+                    <div class="seat-legend">
+                        <div class="legend-item">
+                            <span class="seat-box seat-available"></span>
+                            <span class="legend-label">일반석</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="seat-box seat-vip"></span>
+                            <span class="legend-label">VIP석</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="seat-box seat-selected"></span>
+                            <span class="legend-label">선택한 좌석</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="seat-box seat-occupied"></span>
+                            <span class="legend-label">예약 완료</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결제 요약 패널 -->
+                <div class="summary-panel" id="summary-panel">
+                    <h3 class="summary-panel-title">예매 정보 요약</h3>
+                    
+                    <div class="summary-details">
+                        <div class="summary-row">
+                            <span class="summary-label">공연명</span>
+                            <span class="summary-value highlight" id="summary-movie-title">-</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">일정</span>
+                            <span class="summary-value" id="summary-date-time">-</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">선택한 좌석</span>
+                            <span class="summary-value" id="summary-seats">선택된 좌석 없음</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-divider"></div>
+
+                    <div class="price-details">
+                        <div class="price-row">
+                            <span>일반석 선택</span>
+                            <span id="price-regular-qty">0석</span>
+                        </div>
+                        <div class="price-row">
+                            <span>VIP석 선택</span>
+                            <span id="price-vip-qty">0석</span>
+                        </div>
+                        <div class="price-row total-price-row">
+                            <span>총 예매 수량</span>
+                            <span class="total-price" id="total-qty">0석</span>
+                        </div>
+                    </div>
+
+                    <!-- 예매 실행 버튼 -->
+                    <button class="btn-checkout" id="btn-checkout" disabled>
+                        <i data-lucide="check-circle"></i> 무료 예매 완료
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p class="footer-copyright">&copy; 2026 Aether Art Hall. 교육용 시뮬레이션 프로젝트 (Vite + No-Database)</p>
+            <p class="footer-info">HTML5 • CSS3 Grid & Flexbox • Vanilla JavaScript (State & LocalStorage)</p>
+        </div>
+    </footer>
+
+    <!-- Vite는 ESM 스크립트 모듈 방식을 사용합니다 -->
+    <script type="module" src="/app.js"></script>
+</body>
+</html>

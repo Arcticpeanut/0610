@@ -1,0 +1,483 @@
+/**
+ * ==========================================
+ * AETHER ART HALL - CORE RESERVATION ENGINE
+ * ==========================================
+ * 
+ * [교육용 안내]
+ * 이 스크립트는 싱글 페이지 애플리케이션(SPA) 형태로 동작하는 연극 예매 시스템의 핵심 로직입니다.
+ * 외부 데이터베이스(Supabase) 대신 브라우저의 'localStorage'를 활용해 데이터의 영속성을 시뮬레이션합니다.
+ * 주요 학습 포인트:
+ *   1. State-driven UI: 데이터(상태)를 변경하면 UI가 실시간으로 대응하여 갱신됩니다.
+ *   2. Event Delegation: 동적으로 생성된 요소에 효율적으로 이벤트를 바인딩합니다.
+ *   3. LocalStorage CRUD: 데이터의 조회, 추가를 로컬 파일처럼 다룹니다.
+ */
+
+// 1. 애플리케이션 상태 (Global State)
+const state = {
+    performances: [],            // 연극 공연 목록 데이터
+    selectedPerformance: null,   // 선택된 연극 공연 객체
+    selectedDate: '',            // 선택된 날짜 (YYYY-MM-DD 형식)
+    selectedTime: '',            // 선택된 시간 (HH:MM 형식)
+    selectedSeats: []            // 현재 사용자가 클릭하여 선택한 좌석 번호 목록 (예: ['C-5', 'D-6'])
+};
+
+// 2. 대학로 대표 연극 모의 데이터 (Mock Data)
+// 이미지 로딩 실패를 원천 차단하기 위해 CSS 네온 그래디언트 아트워크를 카드 헤더로 직접 사용합니다.
+const mockPerformances = [
+    {
+        id: 'play-1',
+        title: '쉬어매드니스 (Shear Madness)',
+        englishTitle: 'Shear Madness',
+        genre: '관객참여형 추리극',
+        runtime: 110,
+        rating: 4.8,
+        vipRows: ['C', 'D', 'E'], // VIP 등급 좌석이 배치될 행 지정
+        desc: '언제나 쾌활한 쉬어매드니스 미용실 위층에서 벌어진 살인사건. 실시간으로 관객이 목격자가 되어 배심원으로서 용의자를 심문하고 살인범을 색출해 내는 추리 코미디.',
+        gradient: 'linear-gradient(135deg, #11998e, #38ef7d)'
+    },
+    {
+        id: 'play-2',
+        title: '옥탑방고양이 (Cat on the Roof)',
+        englishTitle: 'Cat on the Roof',
+        genre: '로맨틱 코미디',
+        runtime: 100,
+        rating: 4.7,
+        vipRows: ['D', 'E'],
+        desc: '작가의 꿈을 위해 서울로 상경한 은비와 미스터리한 매력의 경민이 옥탑방 이중 계약으로 인해 엉겁결에 한 집 살이를 시작하며 피어나는 청춘 발랄 로맨스.',
+        gradient: 'linear-gradient(135deg, #ff9966, #ff5e62)'
+    },
+    {
+        id: 'play-3',
+        title: '라이어 (Liar)',
+        englishTitle: 'Liar',
+        genre: '상황극 코미디',
+        runtime: 90,
+        rating: 4.6,
+        vipRows: ['C', 'D'],
+        desc: '두 집 살림을 차린 택시 기사 존 스미스가 가벼운 사고를 계기로 거짓말을 늘어놓기 시작한다. 거짓말이 거짓말을 낳으며 펼쳐지는 꼬리에 꼬리를 무는 포복절도 코미디.',
+        gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)'
+    },
+    {
+        id: 'play-4',
+        title: '빨래 (Laundry)',
+        englishTitle: 'Laundry',
+        genre: '힐링 뮤지컬 연극',
+        runtime: 120,
+        rating: 4.9,
+        vipRows: ['D', 'E', 'F'],
+        desc: '서울 변두리 달동네로 이사 온 나영과 이주노동자 솔롱고가 옥상 빨래터에서 만나 서로의 아픔을 보듬는다. 팍팍한 서울살이 속 소박한 이웃들의 따뜻한 위로와 노래.',
+        gradient: 'linear-gradient(135deg, #00c6ff, #0072ff)'
+    }
+];
+
+// 3. DOM 요소 셀렉터
+const DOM = {
+    movieGrid: document.getElementById('movie-grid'),
+    scheduleSection: document.getElementById('schedule-section'),
+    dateTrack: document.getElementById('date-track'),
+    timeGrid: document.getElementById('time-grid'),
+    seatSection: document.getElementById('seat-section'),
+    seatLayout: document.getElementById('seat-layout'),
+    
+    // 요약 패널
+    summaryMovieTitle: document.getElementById('summary-movie-title'),
+    summaryDateTime: document.getElementById('summary-date-time'),
+    summarySeats: document.getElementById('summary-seats'),
+    priceRegularQty: document.getElementById('price-regular-qty'),
+    priceVipQty: document.getElementById('price-vip-qty'),
+    totalQty: document.getElementById('total-qty'),
+    btnCheckout: document.getElementById('btn-checkout'),
+
+    // 네비게이션
+    btnBookingNav: document.getElementById('btn-booking-nav'),
+    logo: document.getElementById('logo')
+};
+
+// 4. 초기화 함수
+function init() {
+    state.performances = mockPerformances;
+    
+    // 4-1. 연극 목록 카드 렌더링
+    renderPerformances();
+    
+    // 4-2. 이벤트 리스너 설정
+    setupEventListeners();
+    
+    // 4-3. Lucide 아이콘 초기화 (CDN 로드 후 아이콘 태그 교체)
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+// 5. 연극 목록 렌더링 엔진
+function renderPerformances() {
+    DOM.movieGrid.innerHTML = '';
+    
+    state.performances.forEach(play => {
+        const playCard = document.createElement('div');
+        playCard.className = 'movie-card';
+        playCard.dataset.id = play.id;
+        
+        // 포스터 이미지 대신 프리미엄 다크 네온 그래디언트 백그라운드를 활용해 미학적 퀄리티를 유지
+        playCard.innerHTML = `
+            <div class="movie-poster-wrapper" style="background: ${play.gradient}; display: flex; align-items: center; justify-content: center;">
+                <span class="movie-badge-vip">PREMIUM ART</span>
+                <!-- 연극 무대 마스크 모양의 심볼릭 아트워크를 SVG로 인라인 생성 -->
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255,255,255,0.7); filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));">
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    <path d="M2 12h20"></path>
+                </svg>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">${play.title}</h3>
+                <div class="movie-meta">
+                    <span class="movie-rating">
+                        <i data-lucide="star" style="width: 14px; height: 14px; fill: currentColor;"></i> ${play.rating}
+                    </span>
+                    <span>•</span>
+                    <span>${play.genre}</span>
+                    <span>•</span>
+                    <span>${play.runtime}분</span>
+                </div>
+                <p class="movie-desc">${play.desc}</p>
+            </div>
+        `;
+        
+        // 카드 클릭 시 이벤트
+        playCard.addEventListener('click', () => selectPerformance(play));
+        DOM.movieGrid.appendChild(playCard);
+    });
+    
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// 6. 연극 선택 시 처리
+function selectPerformance(play) {
+    state.selectedPerformance = play;
+    
+    // UI 변경: 선택된 카드 하이라이트 처리
+    document.querySelectorAll('.movie-card').forEach(card => {
+        if (card.dataset.id === play.id) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+
+    // 상태 초기화
+    state.selectedDate = '';
+    state.selectedTime = '';
+    state.selectedSeats = [];
+    
+    // 다음 섹션 표시 및 초기 렌더링
+    DOM.scheduleSection.classList.remove('hidden');
+    DOM.seatSection.classList.add('hidden'); // 좌석 선택은 시간 선택 후에 활성화
+    
+    // 상영 시간 리스트 및 날짜 렌더링
+    renderDates();
+    DOM.timeGrid.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; grid-column: 1/-1; text-align: center; padding: 20px;">관람을 원하시는 날짜를 먼저 선택해 주세요.</div>';
+
+    // 해당 스크롤 섹션으로 부드러운 스크롤 이동
+    DOM.scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    updateSummary();
+}
+
+// 7. 일정 날짜 렌더링 (오늘 기준 7일 자동 생성)
+function renderDates() {
+    DOM.dateTrack.innerHTML = '';
+    
+    const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date();
+        currentDate.setDate(today.getDate() + i);
+        
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dateVal = String(currentDate.getDate()).padStart(2, '0');
+        const fullDateStr = `${year}-${month}-${dateVal}`;
+        
+        const dayName = weekDays[currentDate.getDay()];
+        const isToday = i === 0;
+        
+        const dateCard = document.createElement('div');
+        dateCard.className = `date-card ${state.selectedDate === fullDateStr ? 'selected' : ''}`;
+        dateCard.innerHTML = `
+            <span class="date-day-name">${isToday ? '오늘' : dayName + '요일'}</span>
+            <span class="date-day-num">${dateVal}</span>
+        `;
+        
+        dateCard.addEventListener('click', () => {
+            state.selectedDate = fullDateStr;
+            
+            // UI 업데이트
+            document.querySelectorAll('.date-card').forEach(c => c.classList.remove('selected'));
+            dateCard.classList.add('selected');
+            
+            // 시간대 렌더링 활성화
+            renderTimes();
+            state.selectedTime = '';
+            state.selectedSeats = [];
+            DOM.seatSection.classList.add('hidden');
+            updateSummary();
+        });
+        
+        DOM.dateTrack.appendChild(dateCard);
+    }
+}
+
+// 8. 시간(회차) 선택 옵션 렌더링
+function renderTimes() {
+    DOM.timeGrid.innerHTML = '';
+    
+    // 연극 상영 시간표
+    const times = [
+        { time: '11:00', type: '1회차' },
+        { time: '14:00', type: '2회차' },
+        { time: '17:00', type: '3회차' },
+        { time: '20:00', type: '4회차' }
+    ];
+    
+    times.forEach(t => {
+        // 이미 예약 완료된 좌석 개수를 체크하여 잔여 좌석 표기 (총 80석 기준)
+        const bookedSeatsCount = getBookedSeatsForShow(state.selectedPerformance.id, state.selectedDate, t.time).length;
+        const seatsLeft = 80 - bookedSeatsCount;
+        
+        const timeCard = document.createElement('div');
+        timeCard.className = `time-card ${state.selectedTime === t.time ? 'selected' : ''}`;
+        timeCard.innerHTML = `
+            <span class="time-val">${t.time}</span>
+            <span class="time-seats-left">${seatsLeft}석 남음 / 80석</span>
+        `;
+        
+        timeCard.addEventListener('click', () => {
+            state.selectedTime = t.time;
+            
+            // UI 업데이트
+            document.querySelectorAll('.time-card').forEach(c => c.classList.remove('selected'));
+            timeCard.classList.add('selected');
+            
+            // 좌석 맵 보이기
+            DOM.seatSection.classList.remove('hidden');
+            state.selectedSeats = [];
+            
+            // 좌석 배치도 빌드
+            renderSeatLayout();
+            
+            DOM.seatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            updateSummary();
+        });
+        
+        DOM.timeGrid.appendChild(timeCard);
+    });
+}
+
+// 9. 인터랙티브 좌석 배치도 생성 엔진 (8행 10열)
+function renderSeatLayout() {
+    DOM.seatLayout.innerHTML = '';
+    
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const cols = 10;
+    
+    // 현재 상영 회차에 이미 예매 완료(Occupied)된 좌석들을 가져옵니다
+    const occupiedSeats = getBookedSeatsForShow(
+        state.selectedPerformance.id,
+        state.selectedDate,
+        state.selectedTime
+    );
+    
+    rows.forEach(row => {
+        for (let col = 1; col <= cols; col++) {
+            const seatId = `${row}-${col}`;
+            const seatBox = document.createElement('div');
+            
+            // 좌석 등급 판별 (연극 메타데이터에 기재된 VIP 행에 맞춰 세팅)
+            const isVip = state.selectedPerformance.vipRows.includes(row);
+            const isOccupied = occupiedSeats.includes(seatId);
+            const isSelected = state.selectedSeats.includes(seatId);
+            
+            // 클래스 네이밍 설정
+            let seatClass = 'seat-box';
+            if (isOccupied) {
+                seatClass += ' seat-occupied';
+            } else if (isSelected) {
+                seatClass += ' seat-selected';
+            } else if (isVip) {
+                seatClass += ' seat-vip';
+            } else {
+                seatClass += ' seat-available';
+            }
+            
+            seatBox.className = seatClass;
+            // UI 상 좌석 번호 표기
+            seatBox.textContent = `${row}${col}`;
+            seatBox.dataset.seatId = seatId;
+            
+            // 좌석 클릭 이벤트
+            if (!isOccupied) {
+                seatBox.addEventListener('click', () => toggleSeat(seatId));
+            }
+            
+            DOM.seatLayout.appendChild(seatBox);
+        }
+    });
+}
+
+// 10. 좌석 클릭 토글
+function toggleSeat(seatId) {
+    const index = state.selectedSeats.indexOf(seatId);
+    
+    if (index > -1) {
+        // 이미 선택된 좌석이면 배열에서 제거
+        state.selectedSeats.splice(index, 1);
+    } else {
+        // 최대 6석까지 예약 가능 제한 규칙 부여
+        if (state.selectedSeats.length >= 6) {
+            alert('교육용 가상 예매 시스템에서는 1회당 최대 6개의 좌석까지만 동시 선택할 수 있습니다.');
+            return;
+        }
+        state.selectedSeats.push(seatId);
+    }
+    
+    // 상태가 변경되었으므로 좌석 맵과 요약 데이터를 재렌더링
+    renderSeatLayout();
+    updateSummary();
+}
+
+// 11. 예매 요약 정보 실시간 계산 및 패널 업데이트
+function updateSummary() {
+    if (!state.selectedPerformance) {
+        DOM.summaryMovieTitle.textContent = '-';
+        DOM.summaryDateTime.textContent = '-';
+        DOM.summarySeats.textContent = '선택된 좌석 없음';
+        DOM.priceRegularQty.textContent = '0석';
+        DOM.priceVipQty.textContent = '0석';
+        DOM.totalQty.textContent = '0석';
+        DOM.btnCheckout.disabled = true;
+        return;
+    }
+
+    // 연극 제목 정보
+    DOM.summaryMovieTitle.textContent = state.selectedPerformance.title;
+    
+    // 날짜/시간 정보
+    if (state.selectedDate && state.selectedTime) {
+        const dateObj = new Date(state.selectedDate);
+        const dayLabel = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
+        DOM.summaryDateTime.textContent = `${state.selectedDate} (${dayLabel}) | ${state.selectedTime}`;
+    } else {
+        DOM.summaryDateTime.textContent = '-';
+    }
+
+    // 좌석 목록 가독성 있게 나열
+    if (state.selectedSeats.length > 0) {
+        // 가독성 포맷 변경 ('A-5' -> 'A5')
+        const formattedSeats = state.selectedSeats.map(s => s.replace('-', ''));
+        DOM.summarySeats.textContent = formattedSeats.join(', ');
+    } else {
+        DOM.summarySeats.textContent = '선택된 좌석 없음';
+    }
+
+    // 좌석별 수량 합산
+    let regularCount = 0;
+    let vipCount = 0;
+
+    state.selectedSeats.forEach(seatId => {
+        const row = seatId.split('-')[0];
+        const isVip = state.selectedPerformance.vipRows.includes(row);
+        
+        if (isVip) {
+            vipCount++;
+        } else {
+            regularCount++;
+        }
+    });
+
+    DOM.priceRegularQty.textContent = `${regularCount}석`;
+    DOM.priceVipQty.textContent = `${vipCount}석`;
+
+    // 총 수량 표시
+    DOM.totalQty.textContent = `${regularCount + vipCount}석`;
+
+    // 예매 버튼 활성화 여부
+    DOM.btnCheckout.disabled = state.selectedSeats.length === 0;
+}
+
+// 12. [Local DB] 특정 상영 시간표에 예약 완료된 좌석 추출 헬퍼
+function getBookedSeatsForShow(movieId, date, time) {
+    const tickets = getAllTickets();
+    const bookedSeats = [];
+    
+    tickets.forEach(ticket => {
+        if (ticket.movieId === movieId && ticket.date === date && ticket.time === time) {
+            bookedSeats.push(...ticket.seats);
+        }
+    });
+    
+    return bookedSeats;
+}
+
+// 13. [Local DB] 전체 티켓 로드 및 저장 함수
+function getAllTickets() {
+    const data = localStorage.getItem('aether_cinema_tickets');
+    return data ? JSON.parse(data) : [];
+}
+
+function saveTickets(ticketsArray) {
+    localStorage.setItem('aether_cinema_tickets', JSON.stringify(ticketsArray));
+}
+
+// 14. 가상 무료 예매 완료 실행 (Checkout)
+function handleCheckout() {
+    if (state.selectedSeats.length === 0) return;
+
+    // 가상 티켓 데이터 구조 생성 (금액 제외)
+    const ticketId = 'AC-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const newTicket = {
+        id: ticketId,
+        movieId: state.selectedPerformance.id,
+        movieTitle: state.selectedPerformance.title,
+        date: state.selectedDate,
+        time: state.selectedTime,
+        seats: [...state.selectedSeats],
+        bookedAt: new Date().toLocaleString()
+    };
+
+    // 로컬 스토리지에 티켓 푸시 (좌석 비활성화 영속성을 유지하기 위해 데이터 저장)
+    const currentTickets = getAllTickets();
+    currentTickets.push(newTicket);
+    saveTickets(currentTickets);
+
+    // 성공 메시지 피드백
+    alert(`🎉 무료 예매가 성공적으로 완료되었습니다!\n예매번호: ${ticketId}\n선택하신 좌석: ${state.selectedSeats.map(s=>s.replace('-','')).join(', ')}`);
+
+    // 입력 상태 리셋 및 좌석 맵 상태 갱신
+    state.selectedSeats = [];
+    
+    // UI 동기화
+    renderSeatLayout();
+    updateSummary();
+    renderTimes(); // 남은 좌석수 업데이트
+}
+
+// 15. 이벤트 리스너 통합 등록부
+function setupEventListeners() {
+    // 15-1. 가상 예매 실행
+    DOM.btnCheckout.addEventListener('click', handleCheckout);
+    
+    // 15-2. 네비게이션바 클릭 이벤트
+    DOM.btnBookingNav.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    // 로고 클릭 시 새로고침 느낌의 스무스 스크롤 리셋
+    DOM.logo.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+// 16. 브라우저 로딩 시 엔진 가동
+document.addEventListener('DOMContentLoaded', init);
